@@ -64,8 +64,8 @@
 
         nav {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
             background-color: var(--card-bg);
             padding: 6px;
             border-radius: 12px;
@@ -76,9 +76,9 @@
             background: transparent;
             border: none;
             color: var(--text-muted);
-            padding: 10px;
+            padding: 10px 4px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -138,6 +138,15 @@
         .btn:hover {
             background-color: #059669;
             box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-alt {
+            background-color: #334155;
+            color: white;
+        }
+        .btn-alt:hover {
+            background-color: #475569;
+            box-shadow: none;
         }
 
         .team-grid-layout {
@@ -284,6 +293,17 @@
         }
         .over-alert-overlay.show .over-alert-title { transform: scale(1); }
         .over-alert-subtitle { font-size: 1.2rem; color: var(--text-muted); margin-top: 8px; }
+
+        /* History styling extensions */
+        .history-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .history-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); }
+        .history-result { font-weight: 700; color: var(--warning); margin-top: 6px; font-size: 0.95rem; }
     </style>
 </head>
 <body>
@@ -297,22 +317,50 @@
     <header>
         <h1>GullyScore Pro 🏏</h1>
         <p>Advanced Live Grid Scoring Matrix</p>
+        <div id="user-status-bar" style="font-size: 0.85rem; margin-top: 8px; color: var(--accent);"></div>
     </header>
 
     <nav>
         <button id="nav-dash" class="active" onclick="switchTab('dashboard')">Dashboard</button>
         <button id="nav-match" onclick="switchTab('match')">Match Room</button>
         <button id="nav-spec" onclick="switchTab('spectate')">Spectate</button>
+        <button id="nav-hist" onclick="switchTab('history')">History</button>
     </nav>
 
     <div id="dashboard-view" class="card">
-        <h3>Live Broadcast Dashboard</h3>
-        <p style="color: var(--text-muted); margin-top:8px; font-size:0.95rem; margin-bottom:16px;">Initiate an active room match to stream analytics.</p>
-        <div id="active-session-banner" class="hidden" style="margin-bottom: 16px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent); border-radius: 8px;">
-            <p style="color: var(--accent); font-weight: 600;">⚡ Active Match Found in Local Cache!</p>
-            <button class="btn" style="margin-top: 8px; padding: 8px;" onclick="resumeCachedMatch()">Resume Existing Match</button>
+        <div id="auth-container">
+            <h3 id="auth-title" style="margin-bottom: 12px;">Sign In to Save Records</h3>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="auth-username" placeholder="Enter username...">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="Enter password...">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                <button class="btn" onclick="handleAuth('login')">Login</button>
+                <button class="btn btn-alt" onclick="handleAuth('signup')">Sign Up</button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #334155; margin-bottom: 16px;">
         </div>
-        <button class="btn" onclick="switchTab('match')">Go to Match Setup ➔</button>
+
+        <div id="dashboard-main-actions" class="hidden">
+            <h3>Live Broadcast Dashboard</h3>
+            <p style="color: var(--text-muted); margin-top:8px; font-size:0.95rem; margin-bottom:16px;">Initiate an active room match to stream analytics.</p>
+            <div id="active-session-banner" class="hidden" style="margin-bottom: 16px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent); border-radius: 8px;">
+                <p style="color: var(--accent); font-weight: 600;">⚡ Active Match Found in Local Cache!</p>
+                <button class="btn" style="margin-top: 8px; padding: 8px;" onclick="resumeCachedMatch()">Resume Existing Match</button>
+            </div>
+            <button class="btn" onclick="switchTab('match')" style="margin-bottom: 10px;">Go to Match Setup ➔</button>
+            <button class="btn btn-alt" onclick="logoutUser()">Logout 📴</button>
+        </div>
+    </div>
+
+    <div id="history-view" class="card hidden">
+        <h3>Your Scored Records</h3>
+        <p id="history-auth-notice" style="color: var(--danger); font-size: 0.9rem; margin-top: 8px;">Please log in to track and view your personalized match records.</p>
+        <div id="history-list-container" style="margin-top: 16px;"></div>
     </div>
 
     <div id="spectate-view" class="card hidden">
@@ -455,6 +503,7 @@
     let isSpectatorMode = false;
     let match = {};
     let activeRefreshInterval = null;
+    let loggedInUser = null;
 
     function getFreshMatchObject() {
         return {
@@ -472,8 +521,92 @@
     window.onload = function() {
         defaultT1.forEach(p => addPlayerRow('t1', p));
         defaultT2.forEach(p => addPlayerRow('t2', p));
+        checkUserSession();
         checkExistingSession();
     };
+
+    /* --- Auth Implementations --- */
+    function checkUserSession() {
+        const user = localStorage.getItem("GULLYSCORE_LOGGED_IN");
+        if(user) {
+            loggedInUser = user;
+            document.getElementById('user-status-bar').innerText = `Logged in as: ${user}`;
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('dashboard-main-actions').classList.remove('hidden');
+        } else {
+            loggedInUser = null;
+            document.getElementById('user-status-bar').innerText = "";
+            document.getElementById('auth-container').classList.remove('hidden');
+            document.getElementById('dashboard-main-actions').classList.add('hidden');
+        }
+    }
+
+    function handleAuth(type) {
+        const u = document.getElementById('auth-username').value.trim();
+        const p = document.getElementById('auth-password').value.trim();
+        if(!u || !p) { alert("Please complete both form elements."); return; }
+
+        let users = JSON.parse(localStorage.getItem("GULLYSCORE_USERS") || "{}");
+
+        if(type === 'signup') {
+            if(users[u]) { alert("Username already registered!"); return; }
+            users[u] = p;
+            localStorage.setItem("GULLYSCORE_USERS", JSON.stringify(users));
+            // Initialize empty history structure for new account profile
+            localStorage.setItem(`GULLYHIST_${u}`, JSON.stringify([]));
+            alert("Signup complete! Log in now.");
+        } else {
+            if(!users[u] || users[u] !== p) { alert("Invalid credentials."); return; }
+            localStorage.setItem("GULLYSCORE_LOGGED_IN", u);
+            document.getElementById('auth-username').value = "";
+            document.getElementById('auth-password').value = "";
+            checkUserSession();
+            renderHistoryRecords();
+        }
+    }
+
+    function logoutUser() {
+        localStorage.removeItem("GULLYSCORE_LOGGED_IN");
+        checkUserSession();
+        renderHistoryRecords();
+    }
+
+    function renderHistoryRecords() {
+        const listContainer = document.getElementById('history-list-container');
+        listContainer.innerHTML = "";
+        
+        if(!loggedInUser) {
+            document.getElementById('history-auth-notice').classList.remove('hidden');
+            return;
+        }
+        document.getElementById('history-auth-notice').classList.add('hidden');
+
+        const userRecords = JSON.parse(localStorage.getItem(`GULLYHIST_${loggedInUser}`) || "[]");
+        if(userRecords.length === 0) {
+            listContainer.innerHTML = `<p style="color:var(--text-muted); text-align:center;">No past recorded matches available.</p>`;
+            return;
+        }
+
+        userRecords.forEach((m) => {
+            let item = document.createElement('div');
+            item.className = "history-item";
+            item.innerHTML = `
+                <div class="history-header">
+                    <span>Code: ${m.roomId}</span>
+                    <span>Max: ${m.maxOvers} Overs</span>
+                </div>
+                <div style="font-weight:600; font-size:1.05rem;">
+                    🏏 ${m.team1} vs ${m.team2}
+                </div>
+                <div style="font-size:0.9rem; color:var(--text-muted); margin-top:4px;">
+                    Innings 1: ${m.inn1.runs}/${m.inn1.wickets} (${Math.floor(m.inn1.balls/6)}.${m.inn1.balls%6} ov)<br>
+                    Innings 2: ${m.inn2.runs}/${m.inn2.wickets} (${Math.floor(m.inn2.balls/6)}.${m.inn2.balls%6} ov)
+                </div>
+                <div class="history-result">${m.matchResult}</div>
+            `;
+            listContainer.appendChild(item);
+        });
+    }
 
     function checkExistingSession() {
         const activeId = localStorage.getItem("GULLYSCORE_ACTIVE_ROOM");
@@ -541,11 +674,13 @@
         document.getElementById('nav-dash').classList.remove('active');
         document.getElementById('nav-match').classList.remove('active');
         document.getElementById('nav-spec').classList.remove('active');
+        document.getElementById('nav-hist').classList.remove('active');
+        
         document.getElementById('dashboard-view').classList.add('hidden');
         document.getElementById('spectate-view').classList.add('hidden');
         document.getElementById('setup-screen').classList.add('hidden');
-        document.getElementById('scorer-screen').classList.remove('hidden');
         document.getElementById('scorer-screen').classList.add('hidden');
+        document.getElementById('history-view').classList.add('hidden');
 
         if (tab === 'dashboard') {
             document.getElementById('nav-dash').classList.add('active');
@@ -554,6 +689,10 @@
         } else if (tab === 'spectate') {
             document.getElementById('nav-spec').classList.add('active');
             document.getElementById('spectate-view').classList.remove('hidden');
+        } else if (tab === 'history') {
+            document.getElementById('nav-hist').classList.add('active');
+            document.getElementById('history-view').classList.remove('hidden');
+            renderHistoryRecords();
         } else if (tab === 'match') {
             document.getElementById('nav-match').classList.add('active');
             if (isMatchStarted) {
@@ -649,6 +788,9 @@
     }
 
     function startMatch() {
+        if(!loggedInUser) {
+            alert("Warning: You are scoring an anonymous match. Authenticate first if you want this logged to history records!");
+        }
         match = getFreshMatchObject();
         match.team1 = document.getElementById('team1-name').value || "Titans";
         match.team2 = document.getElementById('team2-name').value || "Knights";
@@ -936,6 +1078,14 @@
         match.isFinished = true;
         match.matchResult = msg;
         saveMatchState();
+
+        // Save into User Specific profile history context if logged in
+        if(loggedInUser) {
+            let histories = JSON.parse(localStorage.getItem(`GULLYHIST_${loggedInUser}`) || "[]");
+            histories.push(match);
+            localStorage.setItem(`GULLYHIST_${loggedInUser}`, JSON.stringify(histories));
+        }
+
         updateUI();
 
         setTimeout(() => {
