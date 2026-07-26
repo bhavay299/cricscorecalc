@@ -176,7 +176,6 @@
 
         .spectator-badge { background-color: var(--danger); color: white; text-align: center; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 14px; letter-spacing: 0.5px; }
 
-        /* Simulator Ads Styling */
         .ad-banner-simulator {
             background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
             border: 1px dashed #475569; padding: 10px; text-align: center; font-size: 0.75rem;
@@ -185,6 +184,49 @@
 
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
         .modal-content { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 450px; border: 1px solid #334155; max-height: 85vh; display: flex; flex-direction: column;}
+
+        .coin-container {
+            perspective: 1000px;
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+        }
+        .coin {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s ease-in-out;
+        }
+        .coin.animate-flip {
+            animation: flipCoin 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .coin-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: 4px solid #fbbf24;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            backface-visibility: hidden;
+        }
+        .coin-face.tails {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-color: #60a5fa;
+        }
+        @keyframes flipCoin {
+            0% { transform: translateY(0) rotateY(0); }
+            50% { transform: translateY(-120px) rotateY(720deg); }
+            100% { transform: translateY(0) rotateY(1440deg); }
+        }
 
         .bbb-list-container { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding-right: 4px; }
         .bbb-item { background: #0f172a; border: 1px solid #334155; padding: 10px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
@@ -206,9 +248,6 @@
 
         .history-item { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
 
-        /* ==========================================================================
-           ADVANCED UMPIRE BROADCAST ANIMATION MATRIX OVERLAYS
-           ========================================================================== */
         .umpire-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.98) 100%);
@@ -289,7 +328,6 @@
         .umpire-overlay.mode-out .umpire-text-banner { color: var(--danger); animation: screenShake 0.15s infinite; }
 
         .umpire-overlay.mode-wide .umpire-arm.left { transform: rotate(90deg); top: 140px; left: -24px; }
-        .umpire-overlay.mode-wide .umpire-arm.right { transform: rotate(-90deg); top: 140px; right: -24px; }
         .umpire-overlay.mode-wide .umpire-text-banner { color: var(--warning); }
 
         .umpire-overlay.mode-noball .umpire-arm.left { transform: rotate(90deg); top: 140px; left: -24px; }
@@ -308,7 +346,6 @@
 
         .umpire-overlay.premium-active .umpire-text-banner { font-family: 'Impact', sans-serif; letter-spacing: 2px; text-shadow: 0 0 20px var(--premium); }
 
-        /* Gateway checkout aesthetic styling overrides */
         .gateway-card { background: #fff !important; color: #000 !important; font-family: sans-serif; max-width: 400px !important; }
         .gateway-header { background: #1a2536; color: #fff; padding: 16px; margin: -24px -24px 16px -24px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; }
         .gateway-btn { background: #3399cc; color: #fff; font-weight: bold; border: none; padding: 12px; width: 100%; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 12px; }
@@ -545,13 +582,59 @@
 </div>
 
 <!-- WINDOW DIALOG MODALS -->
+<!-- TOSS MODAL -->
+<div id="toss-modal" class="modal hidden">
+    <div class="modal-content" style="text-align: center;">
+        <h3 style="margin-bottom:8px; color:var(--accent);">Match Toss</h3>
+        <p id="toss-instructions" style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">Choose caller team and call:</p>
+        
+        <div id="toss-setup-pane">
+            <div class="form-group" style="text-align:left;">
+                <label>Who is calling?</label>
+                <select id="toss-caller-select"></select>
+            </div>
+            <div class="form-group" style="text-align:left;">
+                <label>Call</label>
+                <select id="toss-call-choice">
+                    <option value="Heads">Heads</option>
+                    <option value="Tails">Tails</option>
+                </select>
+            </div>
+            <button class="btn" onclick="executeTossFlip()">Flip Coin 🪙</button>
+        </div>
+
+        <div id="toss-animation-pane" class="hidden">
+            <div class="coin-container">
+                <div id="animated-coin" class="coin">
+                    <div class="coin-face">HEADS</div>
+                    <div class="coin-face tails">TAILS</div>
+                </div>
+            </div>
+            <p id="toss-animation-status" style="font-weight: 700; margin-top: 10px; color: var(--warning);">Flirting with destiny...</p>
+        </div>
+
+        <div id="toss-decision-pane" class="hidden">
+            <p id="toss-result-text" style="font-size: 1.1rem; font-weight: 700; color: var(--accent); margin-bottom: 14px;"></p>
+            <div class="form-group" style="text-align:left;">
+                <label>Decision</label>
+                <select id="toss-decision-choice">
+                    <option value="bat">Bat First</option>
+                    <option value="bowl">Bowl First</option>
+                </select>
+            </div>
+            <button class="btn" onclick="finalizeTossDecision()">Confirm & Proceed ➔</button>
+        </div>
+    </div>
+</div>
+
 <div id="opener-modal" class="modal hidden"><div class="modal-content"><h3 style="margin-bottom:12px; color:var(--accent);">Select Openers</h3><div class="form-group"><label>Striker</label><select id="opener-striker-select"></select></div><div class="form-group"><label>Non-Striker</label><select id="opener-nonstriker-select"></select></div><button class="btn" onclick="confirmOpeningBatsmen()">Lock Openers ➔</button></div></div>
 <div id="wicket-modal" class="modal hidden"><div class="modal-content"><h3>Wicket Workflow</h3><div class="form-group"><label>Type</label><select id="wkt-nature-select"><option value="standard">Bowled/Caught/LBW</option><option value="runout_striker">Runout (Striker)</option><option value="runout_nonstriker">Runout (Non-Striker)</option></select></div><div class="form-group"><label>Incoming Batter</label><select id="incoming-batsman-dropdown"></select></div><button class="btn" onclick="submitWicketOutcome()">Confirm Wicket ➔</button></div></div>
 <div id="bbb-modal" class="modal hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 style="color:var(--accent);">Score Ledger</h3><button onclick="closeBallByBallModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button></div><div id="bbb-list" class="bbb-list-container"></div><button class="btn btn-alt" onclick="closeBallByBallModal()" style="margin-top:auto;">Close Ledger</button></div></div>
-<div id="bowler-modal" class="modal hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><h3 style="color:var(--info);" id="bowler-modal-title">Assign Bowler</h3><button onclick="closeBowlerModal()" id="bowler-modal-close" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button></div><div id="bowler-selection-zone" class="form-group"><label>Roster Select:</label><select id="bowler-dropdown-select"></select><button class="btn" style="margin-top:14px;" onclick="assignActiveBowler()">Assign Bowler ➔</button></div><div id="bowler-inspection-zone" class="hidden"><div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #334155; margin-bottom:14px;"><p id="inspect-bowler-name" style="font-size:1.2rem; font-weight:700;">-</p><hr style="border:0; border-top:1px solid #334155; margin:8px 0;"><p>Overs: <span id="inspect-bowler-overs">0.0</span></p><p>Runs Conceded: <span id="inspect-bowler-runs">0</span></p><p>Wickets: <span id="inspect-bowler-wickets">0</span></p></div><button class="btn btn-alt" onclick="setupBowlerDropdownOptions()">Change Bowler</button></div></div></div>
+<div id="bowler-modal" class="modal hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><h3 style="color:var(--info);" id="bowler-modal-title">Assign Bowler</h3><button onclick="closeBowlerModal()" id="bowler-modal-close" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button></div><div id="bowler-selection-zone" class="form-group"><label>Roster Select:</label><select id="bowler-dropdown-select"></select><button class="btn" style="margin-top:14px;" onclick="assignActiveBowler()">Assign Bowler ➔</button></div><div id="bowler-inspection-zone" class="hidden"><div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #334155; margin-bottom:14px;"><p id="inspect-bowler-name" style="font-size:1.2rem; font-weight:700;">-</p><hr style="border:0; border-top:1px solid #334155; margin:8px 0;"><p>Overs: <span id="inspect-bowler-overs">0.0</span></p><p>Runs Conceded: <span id="inspect-bowler-runs">0</span></p><p>Wickets: <span id="inspect-bowler-wickets">0</span></p></div><button class="btn btn-alt" id="change-bowler-mid-spell-btn" onclick="setupBowlerDropdownOptions()">Change Bowler</button></div></div></div>
 
 <script>
     let isMatchStarted = false, isSpectatorMode = false, match = {}, activeRefreshInterval = null, authIsSignUpMode = false, userIsPremium = false;
+    let tossWinnerTeam = "";
 
     function getFreshMatchObject() {
         return {
@@ -586,10 +669,8 @@
         setTimeout(() => { overlay.classList.remove("active", "premium-active"); }, 2200);
     }
 
-    /* PAYMENT MODULE LOGIC CORES */
     function openPremiumPaymentGateway() {
         if(userIsPremium) {
-            // Downgrade handling directly if already owned
             userIsPremium = false;
             localStorage.setItem("GULLYSCORE_PREMIUM_USER", "false");
             alert("Downgraded to free standard configuration.");
@@ -627,7 +708,7 @@
 
     function applyPremiumThemeChanges() {
         let adBanner = document.getElementById('simulated-ad-banner');
-        adBanner.style.display = userIsPremium ? "none" : "block";
+        if (adBanner) adBanner.style.display = userIsPremium ? "none" : "block";
     }
 
     function updateAuthUI() {
@@ -659,7 +740,6 @@
         }
     }
 
-    /* STORAGE FRAMEWORK WRAPPERS */
     function getLocalUsers() { let users = localStorage.getItem("GULLYSCORE_USERS"); return users ? JSON.parse(users) : {}; }
     function toggleAuthMode() { authIsSignUpMode = !authIsSignUpMode; document.getElementById('auth-title').innerText = authIsSignUpMode ? "Scorer Sign Up" : "Scorer Sign In"; document.getElementById('btn-primary-auth').innerText = authIsSignUpMode ? "Register Account" : "Log In"; document.getElementById('btn-toggle-auth').innerText = authIsSignUpMode ? "Already have an account? Sign In" : "Don't have an account? Sign Up"; }
     function handleLogin() { const user = document.getElementById('auth-username').value.trim(); const pass = document.getElementById('auth-password').value.trim(); if(!user || !pass) return alert("Fill fields."); let users = getLocalUsers(); if (authIsSignUpMode) { if(users[user]) return alert("Exists."); users[user] = pass; localStorage.setItem("GULLYSCORE_USERS", JSON.stringify(users)); localStorage.setItem("GULLYSCORE_CURRENT_USER", user); alert("Registered!"); } else { if(!users[user] || users[user] !== pass) return alert("Invalid."); localStorage.setItem("GULLYSCORE_CURRENT_USER", user); alert("Logged in!"); } document.getElementById('auth-username').value = ""; document.getElementById('auth-password').value = ""; updateAuthUI(); switchTab('dashboard'); }
@@ -688,11 +768,80 @@
     function initPlayerDataStructure(inn, battingSquad, bowlingSquad) { inn.playerData = {}; battingSquad.forEach(name => { inn.playerData[name] = { runs: 0, balls: 0, active: false }; }); inn.bowlerData = {}; bowlingSquad.forEach(name => { inn.bowlerData[name] = { runs: 0, balls: 0, wickets: 0 }; }); inn.strikerName = ""; inn.nonStrikerName = ""; inn.activeBowler = bowlingSquad[0] || "Bowler 1"; }
 
     function startMatch() {
-        match = getFreshMatchObject(); match.team1 = document.getElementById('team1-name').value || "Titans"; match.team2 = document.getElementById('team2-name').value || "Knights"; match.maxOvers = parseInt(document.getElementById('match-overs').value) || 2; match.maxWickets = parseInt(document.getElementById('match-wickets').value) || 3; match.scorer = localStorage.getItem("GULLYSCORE_CURRENT_USER") || "Guest Scorer";
-        match.t1Players = Array.from(document.querySelectorAll('.t1-player-name-input')).map(i => i.value.trim()).filter(v => v !== ""); match.t2Players = Array.from(document.querySelectorAll('.t2-player-name-input')).map(i => i.value.trim()).filter(v => v !== "");
+        match = getFreshMatchObject(); 
+        match.team1 = document.getElementById('team1-name').value || "Titans"; 
+        match.team2 = document.getElementById('team2-name').value || "Knights"; 
+        match.maxOvers = parseInt(document.getElementById('match-overs').value) || 2; 
+        match.maxWickets = parseInt(document.getElementById('match-wickets').value) || 3; 
+        match.scorer = localStorage.getItem("GULLYSCORE_CURRENT_USER") || "Guest Scorer";
+        match.t1Players = Array.from(document.querySelectorAll('.t1-player-name-input')).map(i => i.value.trim()).filter(v => v !== ""); 
+        match.t2Players = Array.from(document.querySelectorAll('.t2-player-name-input')).map(i => i.value.trim()).filter(v => v !== "");
+        
         if (match.t1Players.length < 2 || match.t2Players.length < 2) return alert("Roster requires at least 2 players per team.");
-        initPlayerDataStructure(match.inn1, match.t1Players, match.t2Players); initPlayerDataStructure(match.inn2, match.t2Players, match.t1Players);
-        isMatchStarted = true; isSpectatorMode = false; document.getElementById('spectator-view-badge').classList.add('hidden'); generateBroadcastID(); document.getElementById('setup-screen').classList.add('hidden'); document.getElementById('scorer-screen').classList.remove('hidden'); document.getElementById('next-inning-btn').innerText = "End Innings ➔";
+        
+        triggerTossWorkflow();
+    }
+
+    function triggerTossWorkflow() {
+        let callerSelect = document.getElementById('toss-caller-select');
+        callerSelect.innerHTML = `
+            <option value="${match.team1}">${match.team1}</option>
+            <option value="${match.team2}">${match.team2}</option>
+        `;
+        document.getElementById('toss-setup-pane').classList.remove('hidden');
+        document.getElementById('toss-animation-pane').classList.add('hidden');
+        document.getElementById('toss-decision-pane').classList.add('hidden');
+        document.getElementById('toss-modal').classList.remove('hidden');
+    }
+
+    function executeTossFlip() {
+        let caller = document.getElementById('toss-caller-select').value;
+        let callChoice = document.getElementById('toss-call-choice').value;
+
+        document.getElementById('toss-setup-pane').classList.add('hidden');
+        document.getElementById('toss-animation-pane').classList.remove('hidden');
+
+        let coin = document.getElementById('animated-coin');
+        coin.classList.remove('animate-flip');
+        void coin.offsetWidth;
+        coin.classList.add('animate-flip');
+
+        setTimeout(() => {
+            let actualOutcome = Math.random() < 0.5 ? "Heads" : "Tails";
+            let won = (callChoice === actualOutcome);
+            tossWinnerTeam = won ? caller : (caller === match.team1 ? match.team2 : match.team1);
+
+            document.getElementById('toss-animation-pane').classList.add('hidden');
+            document.getElementById('toss-decision-pane').classList.remove('hidden');
+            document.getElementById('toss-result-text').innerText = `Coin landed on ${actualOutcome}! ${tossWinnerTeam} won the toss.`;
+        }, 1500);
+    }
+
+    function finalizeTossDecision() {
+        let decision = document.getElementById('toss-decision-choice').value;
+        document.getElementById('toss-modal').classList.add('hidden');
+
+        if (decision === 'bat') {
+            if (tossWinnerTeam === match.team2) {
+                let tempT = match.team1; match.team1 = match.team2; match.team2 = tempT;
+                let tempP = match.t1Players; match.t1Players = match.t2Players; match.t2Players = tempP;
+            }
+        } else {
+            if (tossWinnerTeam === match.team1) {
+                let tempT = match.team1; match.team1 = match.team2; match.team2 = tempT;
+                let tempP = match.t1Players; match.t1Players = match.t2Players; match.t2Players = tempP;
+            }
+        }
+
+        initPlayerDataStructure(match.inn1, match.t1Players, match.t2Players); 
+        initPlayerDataStructure(match.inn2, match.t2Players, match.t1Players);
+        isMatchStarted = true; isSpectatorMode = false; 
+        document.getElementById('spectator-view-badge').classList.add('hidden'); 
+        generateBroadcastID(); 
+        document.getElementById('setup-screen').classList.add('hidden'); 
+        document.getElementById('scorer-screen').classList.remove('hidden'); 
+        document.getElementById('next-inning-btn').innerText = "End Innings ➔";
+        
         triggerOpeningBatsmenWorkflow();
     }
 
@@ -738,7 +887,10 @@
         let inn = getActiveInnings(), bName = inn.activeBowler || "None Assigned", stats = inn.bowlerData[bName] || { runs: 0, balls: 0, wickets: 0 };
         document.getElementById('inspect-bowler-name').innerText = bName; document.getElementById('inspect-bowler-overs').innerText = `${Math.floor(stats.balls / 6)}.${stats.balls % 6}`; document.getElementById('inspect-bowler-runs').innerText = stats.runs; document.getElementById('inspect-bowler-wickets').innerText = stats.wickets;
         document.getElementById('bowler-selection-zone').classList.add('hidden'); document.getElementById('bowler-inspection-zone').classList.remove('hidden'); document.getElementById('bowler-modal-title').innerText = "Bowler Analytics Card";
-        if (isSpectatorMode) document.getElementById('change-bowler-mid-spell-btn').classList.add('hidden'); else document.getElementById('change-bowler-mid-spell-btn').classList.remove('hidden');
+        let changeBtn = document.getElementById('change-bowler-mid-spell-btn');
+        if (changeBtn) {
+            if (isSpectatorMode) changeBtn.classList.add('hidden'); else changeBtn.classList.remove('hidden');
+        }
         document.getElementById('bowler-modal').classList.remove('hidden');
     }
     function closeBowlerModal() { document.getElementById('bowler-modal').classList.add('hidden'); }
@@ -776,9 +928,13 @@
         let strikeRotated = false, overFinished = false, completedOverNum = 0;
 
         if (type === 'WD') {
-            triggerUmpireSignal("wide", "↔️ WIDE BALL ↔️"); inn.extras += 1; inn.runs += 1;
-            if(inn.bowlerData && inn.bowlerData[inn.activeBowler]) inn.bowlerData[inn.activeBowler].runs += 1;
-            inn.history.push({ type: 'extra', runsAdded: 1, extraAdded: 1, legalBall: false, strikeRotated: false, overFinished: false, affectedBatter: inn.strikerName, bowler: inn.activeBowler, display: type });
+            triggerUmpireSignal("wide", "↔️ WIDE BALL ↔️");
+            let additionalWideRuns = parseInt(prompt("Additional runs scored off the wide (e.g., 4 for boundary, 1 for running)? Enter 0 if none.", "0")) || 0;
+            let totalWideRuns = 1 + additionalWideRuns;
+            inn.extras += totalWideRuns; inn.runs += totalWideRuns;
+            if(inn.bowlerData && inn.bowlerData[inn.activeBowler]) inn.bowlerData[inn.activeBowler].runs += totalWideRuns;
+            if (additionalWideRuns % 2 !== 0) { rotateStrike(); strikeRotated = true; }
+            inn.history.push({ type: 'extra', runsAdded: totalWideRuns, extraAdded: totalWideRuns, legalBall: false, strikeRotated: strikeRotated, overFinished: false, affectedBatter: inn.strikerName, bowler: inn.activeBowler, display: additionalWideRuns > 0 ? `${totalWideRuns}WD` : 'WD' });
         } 
         else if (type === 'NB') {
             triggerUmpireSignal("noball", "🚨 NO BALL 🚨");
