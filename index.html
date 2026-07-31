@@ -156,6 +156,7 @@
         .key { padding: 16px 0; font-size: 1.2rem; font-weight: 700; background-color: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .key.wicket { background-color: var(--danger); }
         .key.extra { background-color: #475569; font-size: 0.95rem; }
+        .key.retire { background-color: var(--warning); color: #000; font-size: 0.95rem; }
 
         .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
         .btn-undo { background-color: #475569; }
@@ -185,49 +186,6 @@
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
         .modal-content { background: var(--card-bg); border-radius: 16px; padding: 24px; width: 100%; max-width: 450px; border: 1px solid #334155; max-height: 85vh; display: flex; flex-direction: column;}
 
-        .coin-container {
-            perspective: 1000px;
-            width: 100px;
-            height: 100px;
-            margin: 20px auto;
-        }
-        .coin {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 1s ease-in-out;
-        }
-        .coin.animate-flip {
-            animation: flipCoin 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
-        .coin-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            border: 4px solid #fbbf24;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1rem;
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
-            backface-visibility: hidden;
-        }
-        .coin-face.tails {
-            transform: rotateY(180deg);
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            border-color: #60a5fa;
-        }
-        @keyframes flipCoin {
-            0% { transform: translateY(0) rotateY(0); }
-            50% { transform: translateY(-120px) rotateY(720deg); }
-            100% { transform: translateY(0) rotateY(1440deg); }
-        }
-
         .bbb-list-container { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding-right: 4px; }
         .bbb-item { background: #0f172a; border: 1px solid #334155; padding: 10px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
         .bbb-over-tag { font-weight: 800; color: var(--info); width: 45px; }
@@ -248,6 +206,7 @@
 
         .history-item { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
 
+        /* UMPIRE BROADCAST ANIMATION MATRIX OVERLAYS */
         .umpire-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.98) 100%);
@@ -327,7 +286,12 @@
         .umpire-overlay.mode-out .umpire-arm.right { transform: rotate(-170deg); top: 135px; right: -2px; }
         .umpire-overlay.mode-out .umpire-text-banner { color: var(--danger); animation: screenShake 0.15s infinite; }
 
+        .umpire-overlay.mode-retire .umpire-arm.left { transform: rotate(90deg); top: 140px; left: -24px; }
+        .umpire-overlay.mode-retire .umpire-arm.right { transform: rotate(-45deg); top: 145px; right: -10px; }
+        .umpire-overlay.mode-retire .umpire-text-banner { color: var(--warning); }
+
         .umpire-overlay.mode-wide .umpire-arm.left { transform: rotate(90deg); top: 140px; left: -24px; }
+        .umpire-overlay.mode-wide .umpire-arm.right { transform: rotate(-90deg); top: 140px; right: -24px; }
         .umpire-overlay.mode-wide .umpire-text-banner { color: var(--warning); }
 
         .umpire-overlay.mode-noball .umpire-arm.left { transform: rotate(90deg); top: 140px; left: -24px; }
@@ -539,14 +503,43 @@
             <button class="key" onclick="addRuns(0)">0</button><button class="key" onclick="addRuns(1)">1</button><button class="key" onclick="addRuns(2)">2</button><button class="key" onclick="addRuns(3)">3</button>
             <button class="key" onclick="addRuns(4)">4</button><button class="key" onclick="addRuns(6)">6</button><button class="key extra" onclick="addExtra('WD')">WD</button><button class="key extra" onclick="addExtra('NB')">NB</button>
             <button class="key extra" onclick="addExtra('B')">BYE</button><button class="key extra" onclick="addExtra('LB')">L-BYE</button>
+            <button class="key retire" style="grid-column: span 4;" onclick="triggerRetireWorkflow()">RETIRE BATTER 🏥</button>
             <button class="key wicket" style="grid-column: span 4;" onclick="triggerWicketWorkflow()">WICKET / DISMISSAL</button>
         </div>
         <div id="scorer-action-row" class="action-row">
             <button class="btn btn-undo" onclick="undoLastBall()">Undo ↩</button><button class="btn btn-warn" id="next-inning-btn" onclick="switchInnings()">End Innings ➔</button>
         </div>
         <button class="btn btn-alt" onclick="openBallByBallModal()">📜 View Ball-by-Ball Log</button>
+        <button class="btn btn-alt" id="btn-edit-roster-midgame" style="margin-top: 8px;" onclick="openEditRosterModal()">✏️ Edit Roster / Rename Player</button>
         <button class="btn btn-exit" style="margin-top: 8px;" onclick="exitMatchRoom()">Exit Match Room ✖</button>
         <div style="margin-top:16px;"><div style="font-size:0.9rem; color:var(--text-muted); font-weight:600;">Over Timeline:</div><div class="balls-row" id="this-over-balls"></div></div>
+    </div>
+</div>
+
+<!-- EDIT ROSTER / RENAME PLAYER MODAL -->
+<div id="edit-roster-modal" class="modal hidden">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="color:var(--accent);">Rename Player</h3>
+            <button onclick="closeEditRosterModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div class="form-group">
+            <label>Select Team</label>
+            <select id="edit-player-team-select" onchange="populateEditPlayerList()">
+                <option value="t1">Team 1</option>
+                <option value="t2">Team 2</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Select Player</label>
+            <select id="edit-player-target-select" onchange="onTargetPlayerSelected()"></select>
+        </div>
+        <div class="form-group">
+            <label>New Name</label>
+            <input type="text" id="edit-player-new-name" placeholder="Enter updated name...">
+        </div>
+        <button class="btn" onclick="savePlayerNameChange()">Update Player Name 💾</button>
+        <button class="btn btn-alt" onclick="closeEditRosterModal()">Cancel</button>
     </div>
 </div>
 
@@ -582,65 +575,44 @@
 </div>
 
 <!-- WINDOW DIALOG MODALS -->
-<!-- TOSS MODAL -->
-<div id="toss-modal" class="modal hidden">
-    <div class="modal-content" style="text-align: center;">
-        <h3 style="margin-bottom:8px; color:var(--accent);">Match Toss</h3>
-        <p id="toss-instructions" style="color:var(--text-muted); font-size:0.9rem; margin-bottom:12px;">Choose caller team and call:</p>
-        
-        <div id="toss-setup-pane">
-            <div class="form-group" style="text-align:left;">
-                <label>Who is calling?</label>
-                <select id="toss-caller-select"></select>
-            </div>
-            <div class="form-group" style="text-align:left;">
-                <label>Call</label>
-                <select id="toss-call-choice">
-                    <option value="Heads">Heads</option>
-                    <option value="Tails">Tails</option>
-                </select>
-            </div>
-            <button class="btn" onclick="executeTossFlip()">Flip Coin 🪙</button>
-        </div>
+<div id="opener-modal" class="modal hidden"><div class="modal-content"><h3 style="margin-bottom:12px; color:var(--accent);">Select Openers</h3><div class="form-group"><label>Striker</label><select id="opener-striker-select"></select></div><div class="form-group"><label>Non-Striker</label><select id="opener-nonstriker-select"></select></div><button class="btn" onclick="confirmOpeningBatsmen()">Lock Openers ➔</button></div></div>
 
-        <div id="toss-animation-pane" class="hidden">
-            <div class="coin-container">
-                <div id="animated-coin" class="coin">
-                    <div class="coin-face">HEADS</div>
-                    <div class="coin-face tails">TAILS</div>
-                </div>
-            </div>
-            <p id="toss-animation-status" style="font-weight: 700; margin-top: 10px; color: var(--warning);">Flirting with destiny...</p>
+<!-- RETIREMENT MODAL -->
+<div id="retire-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Retire Batter</h3>
+        <div class="form-group">
+            <label>Select Batter to Retire</label>
+            <select id="retire-target-select"></select>
         </div>
-
-        <div id="toss-decision-pane" class="hidden">
-            <p id="toss-result-text" style="font-size: 1.1rem; font-weight: 700; color: var(--accent); margin-bottom: 14px;"></p>
-            <div class="form-group" style="text-align:left;">
-                <label>Decision</label>
-                <select id="toss-decision-choice">
-                    <option value="bat">Bat First</option>
-                    <option value="bowl">Bowl First</option>
-                </select>
-            </div>
-            <button class="btn" onclick="finalizeTossDecision()">Confirm & Proceed ➔</button>
+        <div class="form-group">
+            <label>Retirement Reason</label>
+            <select id="retire-type-select">
+                <option value="hurt">Retired Hurt (Eligible to unretire later)</option>
+                <option value="out">Retired Out (Counts as dismissed)</option>
+            </select>
         </div>
+        <div class="form-group">
+            <label>Replacement Batter</label>
+            <select id="retire-replacement-select"></select>
+        </div>
+        <button class="btn" onclick="submitRetirementOutcome()">Confirm Retirement ➔</button>
+        <button class="btn btn-alt" onclick="closeRetireModal()">Cancel</button>
     </div>
 </div>
 
-<div id="opener-modal" class="modal hidden"><div class="modal-content"><h3 style="margin-bottom:12px; color:var(--accent);">Select Openers</h3><div class="form-group"><label>Striker</label><select id="opener-striker-select"></select></div><div class="form-group"><label>Non-Striker</label><select id="opener-nonstriker-select"></select></div><button class="btn" onclick="confirmOpeningBatsmen()">Lock Openers ➔</button></div></div>
 <div id="wicket-modal" class="modal hidden"><div class="modal-content"><h3>Wicket Workflow</h3><div class="form-group"><label>Type</label><select id="wkt-nature-select"><option value="standard">Bowled/Caught/LBW</option><option value="runout_striker">Runout (Striker)</option><option value="runout_nonstriker">Runout (Non-Striker)</option></select></div><div class="form-group"><label>Incoming Batter</label><select id="incoming-batsman-dropdown"></select></div><button class="btn" onclick="submitWicketOutcome()">Confirm Wicket ➔</button></div></div>
 <div id="bbb-modal" class="modal hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 style="color:var(--accent);">Score Ledger</h3><button onclick="closeBallByBallModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button></div><div id="bbb-list" class="bbb-list-container"></div><button class="btn btn-alt" onclick="closeBallByBallModal()" style="margin-top:auto;">Close Ledger</button></div></div>
 <div id="bowler-modal" class="modal hidden"><div class="modal-content"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><h3 style="color:var(--info);" id="bowler-modal-title">Assign Bowler</h3><button onclick="closeBowlerModal()" id="bowler-modal-close" style="background:transparent; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button></div><div id="bowler-selection-zone" class="form-group"><label>Roster Select:</label><select id="bowler-dropdown-select"></select><button class="btn" style="margin-top:14px;" onclick="assignActiveBowler()">Assign Bowler ➔</button></div><div id="bowler-inspection-zone" class="hidden"><div style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid #334155; margin-bottom:14px;"><p id="inspect-bowler-name" style="font-size:1.2rem; font-weight:700;">-</p><hr style="border:0; border-top:1px solid #334155; margin:8px 0;"><p>Overs: <span id="inspect-bowler-overs">0.0</span></p><p>Runs Conceded: <span id="inspect-bowler-runs">0</span></p><p>Wickets: <span id="inspect-bowler-wickets">0</span></p></div><button class="btn btn-alt" id="change-bowler-mid-spell-btn" onclick="setupBowlerDropdownOptions()">Change Bowler</button></div></div></div>
 
 <script>
     let isMatchStarted = false, isSpectatorMode = false, match = {}, activeRefreshInterval = null, authIsSignUpMode = false, userIsPremium = false;
-    let tossWinnerTeam = "";
 
     function getFreshMatchObject() {
         return {
             roomId: "", team1: "", team2: "", maxOvers: 5, maxWickets: 10, currentInnings: 1, isFinished: false, matchResult: "", scorer: "", t1Players: [], t2Players: [],
-            inn1: { runs: 0, wickets: 0, balls: 0, extras: 0, history: [], strikerName: "", nonStrikerName: "", activeBowler: "", playerData: {}, bowlerData: {}, retiredList: [] },
-            inn2: { runs: 0, wickets: 0, balls: 0, extras: 0, history: [], strikerName: "", nonStrikerName: "", activeBowler: "", playerData: {}, bowlerData: {}, retiredList: [] }
+            inn1: { runs: 0, wickets: 0, balls: 0, extras: 0, history: [], strikerName: "", nonStrikerName: "", activeBowler: "", playerData: {}, bowlerData: {}, retiredList: [], retiredHurtList: [] },
+            inn2: { runs: 0, wickets: 0, balls: 0, extras: 0, history: [], strikerName: "", nonStrikerName: "", activeBowler: "", playerData: {}, bowlerData: {}, retiredList: [], retiredHurtList: [] }
         };
     }
 
@@ -708,7 +680,7 @@
 
     function applyPremiumThemeChanges() {
         let adBanner = document.getElementById('simulated-ad-banner');
-        if (adBanner) adBanner.style.display = userIsPremium ? "none" : "block";
+        adBanner.style.display = userIsPremium ? "none" : "block";
     }
 
     function updateAuthUI() {
@@ -747,7 +719,7 @@
     function saveSetupDraft() { const t1Players = Array.from(document.querySelectorAll('.t1-player-name-input')).map(i => i.value.trim()); const t2Players = Array.from(document.querySelectorAll('.t2-player-name-input')).map(i => i.value.trim()); localStorage.setItem("GULLYSCORE_SETUP_DRAFT", JSON.stringify({ team1: document.getElementById('team1-name').value, team2: document.getElementById('team2-name').value, overs: document.getElementById('match-overs').value, wickets: document.getElementById('match-wickets').value, t1Players, t2Players })); }
     function loadSetupDraft() { const savedDraft = localStorage.getItem("GULLYSCORE_SETUP_DRAFT"); if (!savedDraft) return false; const draft = JSON.parse(savedDraft); document.getElementById('team1-name').value = draft.team1 || "Titans"; document.getElementById('team2-name').value = draft.team2 || "Knights"; document.getElementById('match-overs').value = draft.overs || "2"; document.getElementById('match-wickets').value = draft.wickets || "3"; document.getElementById('t1-players-container').innerHTML = ""; document.getElementById('t2-players-container').innerHTML = ""; if (draft.t1Players) draft.t1Players.forEach(p => addPlayerRow('t1', p)); if (draft.t2Players) draft.t2Players.forEach(p => addPlayerRow('t2', p)); return true; }
     function checkExistingSession() { const activeId = localStorage.getItem("GULLYSCORE_ACTIVE_ROOM"); if (activeId && localStorage.getItem(activeId)) { let possibleMatch = JSON.parse(localStorage.getItem(activeId)); if(possibleMatch && !possibleMatch.isFinished) { document.getElementById('active-session-banner').classList.remove('hidden'); return; } } document.getElementById('active-session-banner').classList.add('hidden'); }
-    function resumeCachedMatch() { const activeId = localStorage.getItem("GULLYSCORE_ACTIVE_ROOM"); const mode = localStorage.getItem("GULLYSCORE_CURRENT_MODE") || "scorer"; if (!activeId) return alert("No active match."); const savedData = localStorage.getItem(activeId); if (savedData) { match = JSON.parse(savedData); isMatchStarted = true; isSpectatorMode = (mode === "spectator"); document.getElementById('broadcast-link-url').value = match.roomId; if (isSpectatorMode) { document.getElementById('spectator-view-badge').classList.remove('hidden'); document.getElementById('scorer-input-keypad').classList.add('hidden'); document.getElementById('scorer-action-row').classList.add('hidden'); document.getElementById('share-widget-container').classList.add('hidden'); startSpectatorAutoRefresh(); } else { document.getElementById('spectator-view-badge').classList.add('hidden'); document.getElementById('scorer-input-keypad').classList.remove('hidden'); document.getElementById('scorer-action-row').classList.remove('hidden'); document.getElementById('share-widget-container').classList.remove('hidden'); } switchTab('match'); updateUI(); } }
+    function resumeCachedMatch() { const activeId = localStorage.getItem("GULLYSCORE_ACTIVE_ROOM"); const mode = localStorage.getItem("GULLYSCORE_CURRENT_MODE") || "scorer"; if (!activeId) return alert("No active match."); const savedData = localStorage.getItem(activeId); if (savedData) { match = JSON.parse(savedData); isMatchStarted = true; isSpectatorMode = (mode === "spectator"); document.getElementById('broadcast-link-url').value = match.roomId; if (isSpectatorMode) { document.getElementById('spectator-view-badge').classList.remove('hidden'); document.getElementById('scorer-input-keypad').classList.add('hidden'); document.getElementById('scorer-action-row').classList.add('hidden'); document.getElementById('share-widget-container').classList.add('hidden'); document.getElementById('btn-edit-roster-midgame').classList.add('hidden'); startSpectatorAutoRefresh(); } else { document.getElementById('spectator-view-badge').classList.add('hidden'); document.getElementById('scorer-input-keypad').classList.remove('hidden'); document.getElementById('scorer-action-row').classList.remove('hidden'); document.getElementById('share-widget-container').classList.remove('hidden'); document.getElementById('btn-edit-roster-midgame').classList.remove('hidden'); } switchTab('match'); updateUI(); } }
     function addPlayerRow(team, value) { let container = document.getElementById(`${team}-players-container`); let row = document.createElement('div'); row.className = "player-entry-row"; row.innerHTML = `<input type="text" class="${team}-player-name-input" value="${value}" oninput="saveSetupDraft()"><button class="btn-remove-player" onclick="this.parentElement.remove(); saveSetupDraft();">&times;</button>`; container.appendChild(row); saveSetupDraft(); }
 
     function switchTab(tab) {
@@ -763,94 +735,120 @@
     function generateBroadcastID() { let randId = "GULLY-" + Math.floor(1000 + Math.random() * 9000); match.roomId = randId; document.getElementById('broadcast-link-url').value = randId; localStorage.setItem("GULLYSCORE_ACTIVE_ROOM", randId); localStorage.setItem("GULLYSCORE_CURRENT_MODE", "scorer"); saveMatchState(); }
     function copyShareLink() { let linkElem = document.getElementById('broadcast-link-url'); linkElem.select(); try { document.execCommand('copy'); alert(`Copied code: ${linkElem.value}`); } catch (err) { navigator.clipboard.writeText(linkElem.value).then(() => alert(`Copied code!`)); } }
     function saveMatchState() { if (!isSpectatorMode && match.roomId) localStorage.setItem(match.roomId, JSON.stringify(match)); }
-    function syncSpectatorStream() { let rawInput = document.getElementById('spectate-input-url').value.trim().toUpperCase(); if(!rawInput) return alert("Type code."); let savedData = localStorage.getItem(rawInput); if (!savedData) return alert("Not found."); match = JSON.parse(savedData); isMatchStarted = true; isSpectatorMode = true; localStorage.setItem("GULLYSCORE_ACTIVE_ROOM", match.roomId); localStorage.setItem("GULLYSCORE_CURRENT_MODE", "spectator"); document.getElementById('broadcast-link-url').value = match.roomId; document.getElementById('spectator-view-badge').classList.remove('hidden'); document.getElementById('scorer-input-keypad').classList.add('hidden'); document.getElementById('scorer-action-row').classList.add('hidden'); document.getElementById('share-widget-container').classList.add('hidden'); document.getElementById('spectate-view').classList.add('hidden'); document.getElementById('scorer-screen').classList.remove('hidden'); document.getElementById('nav-spec').classList.remove('active'); document.getElementById('nav-match').classList.add('active'); updateUI(); startSpectatorAutoRefresh(); }
+    function syncSpectatorStream() { let rawInput = document.getElementById('spectate-input-url').value.trim().toUpperCase(); if(!rawInput) return alert("Type code."); let savedData = localStorage.getItem(rawInput); if (!savedData) return alert("Not found."); match = JSON.parse(savedData); isMatchStarted = true; isSpectatorMode = true; localStorage.setItem("GULLYSCORE_ACTIVE_ROOM", match.roomId); localStorage.setItem("GULLYSCORE_CURRENT_MODE", "spectator"); document.getElementById('broadcast-link-url').value = match.roomId; document.getElementById('spectator-view-badge').classList.remove('hidden'); document.getElementById('scorer-input-keypad').classList.add('hidden'); document.getElementById('scorer-action-row').classList.add('hidden'); document.getElementById('share-widget-container').classList.add('hidden'); document.getElementById('btn-edit-roster-midgame').classList.add('hidden'); document.getElementById('spectate-view').classList.add('hidden'); document.getElementById('scorer-screen').classList.remove('hidden'); document.getElementById('nav-spec').classList.remove('active'); document.getElementById('nav-match').classList.add('active'); updateUI(); startSpectatorAutoRefresh(); }
     function startSpectatorAutoRefresh() { if (activeRefreshInterval) clearInterval(activeRefreshInterval); activeRefreshInterval = setInterval(() => { if (isSpectatorMode && match.roomId) { let freshData = localStorage.getItem(match.roomId); if (freshData) { match = JSON.parse(freshData); updateUI(); } } }, 1000); }
-    function initPlayerDataStructure(inn, battingSquad, bowlingSquad) { inn.playerData = {}; battingSquad.forEach(name => { inn.playerData[name] = { runs: 0, balls: 0, active: false }; }); inn.bowlerData = {}; bowlingSquad.forEach(name => { inn.bowlerData[name] = { runs: 0, balls: 0, wickets: 0 }; }); inn.strikerName = ""; inn.nonStrikerName = ""; inn.activeBowler = bowlingSquad[0] || "Bowler 1"; }
+    function initPlayerDataStructure(inn, battingSquad, bowlingSquad) { inn.playerData = {}; battingSquad.forEach(name => { inn.playerData[name] = { runs: 0, balls: 0, active: false }; }); inn.bowlerData = {}; bowlingSquad.forEach(name => { inn.bowlerData[name] = { runs: 0, balls: 0, wickets: 0 }; }); inn.strikerName = ""; inn.nonStrikerName = ""; inn.activeBowler = bowlingSquad[0] || "Bowler 1"; inn.retiredList = []; inn.retiredHurtList = []; }
 
     function startMatch() {
-        match = getFreshMatchObject(); 
-        match.team1 = document.getElementById('team1-name').value || "Titans"; 
-        match.team2 = document.getElementById('team2-name').value || "Knights"; 
-        match.maxOvers = parseInt(document.getElementById('match-overs').value) || 2; 
-        match.maxWickets = parseInt(document.getElementById('match-wickets').value) || 3; 
-        match.scorer = localStorage.getItem("GULLYSCORE_CURRENT_USER") || "Guest Scorer";
-        match.t1Players = Array.from(document.querySelectorAll('.t1-player-name-input')).map(i => i.value.trim()).filter(v => v !== ""); 
-        match.t2Players = Array.from(document.querySelectorAll('.t2-player-name-input')).map(i => i.value.trim()).filter(v => v !== "");
-        
+        match = getFreshMatchObject(); match.team1 = document.getElementById('team1-name').value || "Titans"; match.team2 = document.getElementById('team2-name').value || "Knights"; match.maxOvers = parseInt(document.getElementById('match-overs').value) || 2; match.maxWickets = parseInt(document.getElementById('match-wickets').value) || 3; match.scorer = localStorage.getItem("GULLYSCORE_CURRENT_USER") || "Guest Scorer";
+        match.t1Players = Array.from(document.querySelectorAll('.t1-player-name-input')).map(i => i.value.trim()).filter(v => v !== ""); match.t2Players = Array.from(document.querySelectorAll('.t2-player-name-input')).map(i => i.value.trim()).filter(v => v !== "");
         if (match.t1Players.length < 2 || match.t2Players.length < 2) return alert("Roster requires at least 2 players per team.");
-        
-        triggerTossWorkflow();
-    }
-
-    function triggerTossWorkflow() {
-        let callerSelect = document.getElementById('toss-caller-select');
-        callerSelect.innerHTML = `
-            <option value="${match.team1}">${match.team1}</option>
-            <option value="${match.team2}">${match.team2}</option>
-        `;
-        document.getElementById('toss-setup-pane').classList.remove('hidden');
-        document.getElementById('toss-animation-pane').classList.add('hidden');
-        document.getElementById('toss-decision-pane').classList.add('hidden');
-        document.getElementById('toss-modal').classList.remove('hidden');
-    }
-
-    function executeTossFlip() {
-        let caller = document.getElementById('toss-caller-select').value;
-        let callChoice = document.getElementById('toss-call-choice').value;
-
-        document.getElementById('toss-setup-pane').classList.add('hidden');
-        document.getElementById('toss-animation-pane').classList.remove('hidden');
-
-        let coin = document.getElementById('animated-coin');
-        coin.classList.remove('animate-flip');
-        void coin.offsetWidth;
-        coin.classList.add('animate-flip');
-
-        setTimeout(() => {
-            let actualOutcome = Math.random() < 0.5 ? "Heads" : "Tails";
-            let won = (callChoice === actualOutcome);
-            tossWinnerTeam = won ? caller : (caller === match.team1 ? match.team2 : match.team1);
-
-            document.getElementById('toss-animation-pane').classList.add('hidden');
-            document.getElementById('toss-decision-pane').classList.remove('hidden');
-            document.getElementById('toss-result-text').innerText = `Coin landed on ${actualOutcome}! ${tossWinnerTeam} won the toss.`;
-        }, 1500);
-    }
-
-    function finalizeTossDecision() {
-        let decision = document.getElementById('toss-decision-choice').value;
-        document.getElementById('toss-modal').classList.add('hidden');
-
-        if (decision === 'bat') {
-            if (tossWinnerTeam === match.team2) {
-                let tempT = match.team1; match.team1 = match.team2; match.team2 = tempT;
-                let tempP = match.t1Players; match.t1Players = match.t2Players; match.t2Players = tempP;
-            }
-        } else {
-            if (tossWinnerTeam === match.team1) {
-                let tempT = match.team1; match.team1 = match.team2; match.team2 = tempT;
-                let tempP = match.t1Players; match.t1Players = match.t2Players; match.t2Players = tempP;
-            }
-        }
-
-        initPlayerDataStructure(match.inn1, match.t1Players, match.t2Players); 
-        initPlayerDataStructure(match.inn2, match.t2Players, match.t1Players);
-        isMatchStarted = true; isSpectatorMode = false; 
-        document.getElementById('spectator-view-badge').classList.add('hidden'); 
-        generateBroadcastID(); 
-        document.getElementById('setup-screen').classList.add('hidden'); 
-        document.getElementById('scorer-screen').classList.remove('hidden'); 
-        document.getElementById('next-inning-btn').innerText = "End Innings ➔";
-        
+        initPlayerDataStructure(match.inn1, match.t1Players, match.t2Players); initPlayerDataStructure(match.inn2, match.t2Players, match.t1Players);
+        isMatchStarted = true; isSpectatorMode = false; document.getElementById('spectator-view-badge').classList.add('hidden'); document.getElementById('btn-edit-roster-midgame').classList.remove('hidden'); generateBroadcastID(); document.getElementById('setup-screen').classList.add('hidden'); document.getElementById('scorer-screen').classList.remove('hidden'); document.getElementById('next-inning-btn').innerText = "End Innings ➔";
         triggerOpeningBatsmenWorkflow();
     }
 
+    /* RENAME PLAYER MID-MATCH SYSTEM */
+    function openEditRosterModal() {
+        if (isSpectatorMode) return;
+        document.getElementById('edit-player-team-select').value = "t1";
+        populateEditPlayerList();
+        document.getElementById('edit-roster-modal').classList.remove('hidden');
+    }
+
+    function closeEditRosterModal() {
+        document.getElementById('edit-roster-modal').classList.add('hidden');
+    }
+
+    function populateEditPlayerList() {
+        let teamKey = document.getElementById('edit-player-team-select').value;
+        let squad = (teamKey === 't1') ? match.t1Players : match.t2Players;
+        let targetSelect = document.getElementById('edit-player-target-select');
+        targetSelect.innerHTML = "";
+
+        squad.forEach(player => {
+            let opt = document.createElement('option');
+            opt.value = player;
+            opt.innerText = player;
+            targetSelect.appendChild(opt);
+        });
+
+        onTargetPlayerSelected();
+    }
+
+    function onTargetPlayerSelected() {
+        let targetSelect = document.getElementById('edit-player-target-select');
+        document.getElementById('edit-player-new-name').value = targetSelect.value || "";
+    }
+
+    function savePlayerNameChange() {
+        let teamKey = document.getElementById('edit-player-team-select').value;
+        let oldName = document.getElementById('edit-player-target-select').value;
+        let newName = document.getElementById('edit-player-new-name').value.trim();
+
+        if (!oldName) return alert("Please select a player to edit.");
+        if (!newName) return alert("Please enter a valid new name.");
+        if (oldName === newName) return closeEditRosterModal();
+
+        let squad = (teamKey === 't1') ? match.t1Players : match.t2Players;
+        if (squad.includes(newName)) return alert("A player with this name already exists in the roster.");
+
+        let idx = squad.indexOf(oldName);
+        if (idx !== -1) squad[idx] = newName;
+
+        let renameInInnings = (inn) => {
+            if (inn.strikerName === oldName) inn.strikerName = newName;
+            if (inn.nonStrikerName === oldName) inn.nonStrikerName = newName;
+            if (inn.activeBowler === oldName) inn.activeBowler = newName;
+
+            if (inn.playerData && inn.playerData[oldName]) {
+                inn.playerData[newName] = inn.playerData[oldName];
+                delete inn.playerData[oldName];
+            }
+            if (inn.bowlerData && inn.bowlerData[oldName]) {
+                inn.bowlerData[newName] = inn.bowlerData[oldName];
+                delete inn.bowlerData[oldName];
+            }
+
+            if (inn.retiredList) {
+                let rIdx = inn.retiredList.indexOf(oldName);
+                if (rIdx !== -1) inn.retiredList[rIdx] = newName;
+            }
+            if (inn.retiredHurtList) {
+                let rhIdx = inn.retiredHurtList.indexOf(oldName);
+                if (rhIdx !== -1) inn.retiredHurtList[rhIdx] = newName;
+            }
+
+            if (inn.history) {
+                inn.history.forEach(ball => {
+                    if (ball.affectedBatter === oldName) ball.affectedBatter = newName;
+                    if (ball.bowler === oldName) ball.bowler = newName;
+                    if (ball.outgoing === oldName) ball.outgoing = newName;
+                    if (ball.incoming === oldName) ball.incoming = newName;
+                    if (ball.prevStriker === oldName) ball.prevStriker = newName;
+                    if (ball.prevNonStriker === oldName) ball.prevNonStriker = newName;
+                });
+            }
+        };
+
+        renameInInnings(match.inn1);
+        renameInInnings(match.inn2);
+
+        saveMatchState();
+        updateUI();
+        closeEditRosterModal();
+        alert(`Player successfully renamed from "${oldName}" to "${newName}"!`);
+    }
+
     function triggerOpeningBatsmenWorkflow() {
-        let squad = getActiveBattingSquad(), strikerSelect = document.getElementById('opener-striker-select'), nonStrikerSelect = document.getElementById('opener-nonstriker-select');
+        let inn = getActiveInnings(), squad = getActiveBattingSquad(), strikerSelect = document.getElementById('opener-striker-select'), nonStrikerSelect = document.getElementById('opener-nonstriker-select');
         strikerSelect.innerHTML = ""; nonStrikerSelect.innerHTML = "";
-        squad.forEach((player, idx) => {
-            let opt1 = document.createElement('option'); opt1.value = player; opt1.innerText = player; if(idx === 0) opt1.selected = true; strikerSelect.appendChild(opt1);
-            let opt2 = document.createElement('option'); opt2.value = player; opt2.innerText = player; if(idx === 1 || (idx === 0 && squad.length === 1)) opt2.selected = true; nonStrikerSelect.appendChild(opt2);
+        
+        let availableOptions = squad.filter(p => !inn.retiredList.includes(p) || (inn.retiredHurtList && inn.retiredHurtList.includes(p)));
+        availableOptions.forEach((player, idx) => {
+            let labelText = (inn.retiredHurtList && inn.retiredHurtList.includes(player)) ? `${player} (Unretire)` : player;
+            let opt1 = document.createElement('option'); opt1.value = player; opt1.innerText = labelText; if(idx === 0) opt1.selected = true; strikerSelect.appendChild(opt1);
+            let opt2 = document.createElement('option'); opt2.value = player; opt2.innerText = labelText; if(idx === 1 || (idx === 0 && availableOptions.length === 1)) opt2.selected = true; nonStrikerSelect.appendChild(opt2);
         });
         document.getElementById('opener-modal').classList.remove('hidden');
     }
@@ -859,6 +857,10 @@
         let striker = document.getElementById('opener-striker-select').value, nonStriker = document.getElementById('opener-nonstriker-select').value;
         if (striker === nonStriker) return alert("Striker and Non-Striker must be different!");
         let inn = getActiveInnings(); inn.strikerName = striker; inn.nonStrikerName = nonStriker;
+        
+        if (inn.retiredHurtList && inn.retiredHurtList.includes(striker)) inn.retiredHurtList = inn.retiredHurtList.filter(p => p !== striker);
+        if (inn.retiredHurtList && inn.retiredHurtList.includes(nonStriker)) inn.retiredHurtList = inn.retiredHurtList.filter(p => p !== nonStriker);
+
         if(inn.playerData[striker]) inn.playerData[striker].active = true; if(inn.playerData[nonStriker]) inn.playerData[nonStriker].active = true;
         document.getElementById('opener-modal').classList.add('hidden'); saveMatchState(); updateUI(); triggerBowlerSelectionWorkflow();
     }
@@ -887,10 +889,7 @@
         let inn = getActiveInnings(), bName = inn.activeBowler || "None Assigned", stats = inn.bowlerData[bName] || { runs: 0, balls: 0, wickets: 0 };
         document.getElementById('inspect-bowler-name').innerText = bName; document.getElementById('inspect-bowler-overs').innerText = `${Math.floor(stats.balls / 6)}.${stats.balls % 6}`; document.getElementById('inspect-bowler-runs').innerText = stats.runs; document.getElementById('inspect-bowler-wickets').innerText = stats.wickets;
         document.getElementById('bowler-selection-zone').classList.add('hidden'); document.getElementById('bowler-inspection-zone').classList.remove('hidden'); document.getElementById('bowler-modal-title').innerText = "Bowler Analytics Card";
-        let changeBtn = document.getElementById('change-bowler-mid-spell-btn');
-        if (changeBtn) {
-            if (isSpectatorMode) changeBtn.classList.add('hidden'); else changeBtn.classList.remove('hidden');
-        }
+        if (isSpectatorMode) document.getElementById('change-bowler-mid-spell-btn').classList.add('hidden'); else document.getElementById('change-bowler-mid-spell-btn').classList.remove('hidden');
         document.getElementById('bowler-modal').classList.remove('hidden');
     }
     function closeBowlerModal() { document.getElementById('bowler-modal').classList.add('hidden'); }
@@ -961,14 +960,106 @@
         checkEndInningsCondition();
     }
 
+    function triggerRetireWorkflow() {
+        if(isSpectatorMode || match.isFinished) return;
+        let inn = getActiveInnings();
+        if(!inn.strikerName && !inn.nonStrikerName) return alert("No active batters to retire!");
+        
+        let targetSelect = document.getElementById('retire-target-select');
+        targetSelect.innerHTML = "";
+        if (inn.strikerName) {
+            let opt = document.createElement('option'); opt.value = "striker"; opt.innerText = `Striker: ${inn.strikerName}`; targetSelect.appendChild(opt);
+        }
+        if (inn.nonStrikerName) {
+            let opt = document.createElement('option'); opt.value = "nonstriker"; opt.innerText = `Non-Striker: ${inn.nonStrikerName}`; targetSelect.appendChild(opt);
+        }
+
+        populateReplacementDropdown();
+        document.getElementById('retire-modal').classList.remove('hidden');
+    }
+
+    function populateReplacementDropdown() {
+        let inn = getActiveInnings(), squad = getActiveBattingSquad();
+        let repSelect = document.getElementById('retire-replacement-select');
+        repSelect.innerHTML = "";
+
+        if(!inn.retiredHurtList) inn.retiredHurtList = [];
+        
+        let freshBatters = squad.filter(p => !inn.retiredList.includes(p) && p !== inn.strikerName && p !== inn.nonStrikerName);
+        let eligibleToUnretire = inn.retiredHurtList;
+
+        if(freshBatters.length === 0 && eligibleToUnretire.length === 0) {
+            let opt = document.createElement('option'); opt.value = "NONE"; opt.innerText = "No remaining batters available"; repSelect.appendChild(opt);
+        } else {
+            freshBatters.forEach(p => {
+                let opt = document.createElement('option'); opt.value = p; opt.innerText = p; repSelect.appendChild(opt);
+            });
+            eligibleToUnretire.forEach(p => {
+                let opt = document.createElement('option'); opt.value = p; opt.innerText = `${p} (Unretire)`; repSelect.appendChild(opt);
+            });
+        }
+    }
+
+    function closeRetireModal() { document.getElementById('retire-modal').classList.add('hidden'); }
+
+    function submitRetirementOutcome() {
+        let inn = getActiveInnings();
+        let targetRole = document.getElementById('retire-target-select').value;
+        let retireType = document.getElementById('retire-type-select').value;
+        let replacement = document.getElementById('retire-replacement-select').value;
+
+        let outgoing = (targetRole === "striker") ? inn.strikerName : inn.nonStrikerName;
+        let prevStriker = inn.strikerName, prevNonStriker = inn.nonStrikerName;
+
+        if (retireType === 'out') {
+            inn.wickets += 1;
+            inn.retiredList.push(outgoing);
+        } else {
+            if(!inn.retiredHurtList) inn.retiredHurtList = [];
+            inn.retiredHurtList.push(outgoing);
+        }
+
+        if (replacement !== "NONE") {
+            if (inn.retiredHurtList && inn.retiredHurtList.includes(replacement)) {
+                inn.retiredHurtList = inn.retiredHurtList.filter(p => p !== replacement);
+            }
+            if (targetRole === "striker") inn.strikerName = replacement;
+            else inn.nonStrikerName = replacement;
+        } else {
+            if (targetRole === "striker") inn.strikerName = "";
+            else inn.nonStrikerName = "";
+        }
+
+        inn.history.push({
+            type: 'retire', runsAdded: 0, extraAdded: 0, legalBall: false,
+            retireType: retireType, outgoing: outgoing, incoming: replacement,
+            prevStriker: prevStriker, prevNonStriker: prevNonStriker,
+            display: retireType === 'out' ? 'RET-OUT' : 'RET-HURT'
+        });
+
+        closeRetireModal();
+        triggerUmpireSignal("retire", retireType === 'out' ? "RETIRED OUT" : "RETIRED HURT");
+        saveMatchState();
+        updateUI();
+        checkEndInningsCondition();
+    }
+
     function triggerWicketWorkflow() {
         if(isSpectatorMode || match.isFinished) return;
-        let squad = getActiveBattingSquad(), inn = getActiveInnings(), availableNext = squad.filter(p => !inn.retiredList.includes(p) && p !== inn.strikerName && p !== inn.nonStrikerName), selectDropdown = document.getElementById('incoming-batsman-dropdown');
+        let squad = getActiveBattingSquad(), inn = getActiveInnings();
+        if(!inn.retiredHurtList) inn.retiredHurtList = [];
+        
+        let freshBatters = squad.filter(p => !inn.retiredList.includes(p) && p !== inn.strikerName && p !== inn.nonStrikerName && !inn.retiredHurtList.includes(p));
+        let eligibleToUnretire = inn.retiredHurtList;
+        
+        let selectDropdown = document.getElementById('incoming-batsman-dropdown');
         selectDropdown.innerHTML = "";
-        if(availableNext.length === 0) {
+        
+        if(freshBatters.length === 0 && eligibleToUnretire.length === 0) {
             let option = document.createElement('option'); option.value = "ALL_OUT_NO_SUB"; option.innerText = "No remaining batsmen"; selectDropdown.appendChild(option);
         } else {
-            availableNext.forEach(player => { let option = document.createElement('option'); option.value = player; option.innerText = player; selectDropdown.appendChild(option); });
+            freshBatters.forEach(player => { let option = document.createElement('option'); option.value = player; option.innerText = player; selectDropdown.appendChild(option); });
+            eligibleToUnretire.forEach(player => { let option = document.createElement('option'); option.value = player; option.innerText = `${player} (Unretire)`; selectDropdown.appendChild(option); });
         }
         document.getElementById('wicket-modal').classList.remove('hidden');
     }
@@ -980,7 +1071,14 @@
         inn.wickets += 1; inn.balls += 1; inn.retiredList.push(outgoingBatter);
         if(inn.bowlerData && inn.bowlerData[inn.activeBowler]) { inn.bowlerData[inn.activeBowler].balls += 1; if (nature === 'standard') inn.bowlerData[inn.activeBowler].wickets += 1; }
         let backupStriker = inn.strikerName, backupNonStriker = inn.nonStrikerName;
-        if (chosenIncoming !== "ALL_OUT_NO_SUB") { if (nature === 'standard' || nature === 'runout_striker') inn.strikerName = chosenIncoming; else inn.nonStrikerName = chosenIncoming; }
+        
+        if (chosenIncoming !== "ALL_OUT_NO_SUB") {
+            if (inn.retiredHurtList && inn.retiredHurtList.includes(chosenIncoming)) {
+                inn.retiredHurtList = inn.retiredHurtList.filter(p => p !== chosenIncoming);
+            }
+            if (nature === 'standard' || nature === 'runout_striker') inn.strikerName = chosenIncoming; else inn.nonStrikerName = chosenIncoming;
+        }
+
         let overFinished = (inn.balls % 6 === 0), completedOverNum = overFinished ? (inn.balls / 6) : 0;
         if (overFinished) rotateStrike();
         inn.history.push({ type: 'wicket', runsAdded: 0, extraAdded: 0, legalBall: true, nature: nature, outgoing: outgoingBatter, affectedBatter: outgoingBatter, bowler: inn.activeBowler, incoming: chosenIncoming, prevStriker: backupStriker, prevNonStriker: backupNonStriker, overFinished: overFinished, display: 'W' });
@@ -994,7 +1092,15 @@
         let inn = getActiveInnings(); if (inn.history.length === 0) return;
         let last = inn.history.pop(); inn.runs -= last.runsAdded; inn.extras -= last.extraAdded;
         if (last.legalBall) inn.balls -= 1;
-        if (last.type === 'wicket') {
+        
+        if (last.type === 'retire') {
+            if (last.retireType === 'out') {
+                inn.wickets -= 1; inn.retiredList.pop();
+            } else {
+                if (inn.retiredHurtList) inn.retiredHurtList.pop();
+            }
+            inn.strikerName = last.prevStriker; inn.nonStrikerName = last.prevNonStriker;
+        } else if (last.type === 'wicket') {
             inn.wickets -= 1; inn.retiredList.pop(); inn.strikerName = last.prevStriker; inn.nonStrikerName = last.prevNonStriker;
             if(inn.bowlerData && inn.bowlerData[last.bowler]) { inn.bowlerData[last.bowler].balls -= 1; if (last.nature === 'standard') inn.bowlerData[last.bowler].wickets -= 1; }
         } else {
@@ -1006,7 +1112,16 @@
     }
 
     function checkEndInningsCondition() {
-        let inn = getActiveInnings(), isAllOut = (inn.wickets >= match.maxWickets || inn.retiredList.length >= getActiveBattingSquad().length - 1), isOversDone = (inn.balls >= match.maxOvers * 6);
+        let inn = getActiveInnings();
+        if(!inn.retiredHurtList) inn.retiredHurtList = [];
+        
+        let squad = getActiveBattingSquad();
+        let remainingToBat = squad.filter(p => !inn.retiredList.includes(p) && p !== inn.strikerName && p !== inn.nonStrikerName);
+        let totalAvailable = remainingToBat.length + inn.retiredHurtList.length;
+
+        let isAllOut = (inn.wickets >= match.maxWickets || (totalAvailable === 0 && (!inn.strikerName || !inn.nonStrikerName)));
+        let isOversDone = (inn.balls >= match.maxOvers * 6);
+        
         if (match.currentInnings === 1 && (isAllOut || isOversDone)) { setTimeout(() => { alert("1st Innings Completed!"); }, 2300); } 
         else if (match.currentInnings === 2 && (inn.runs > match.inn1.runs || isAllOut || isOversDone)) {
             let resultText = (inn.runs > match.inn1.runs) ? `${match.team2} won by ${match.maxWickets - inn.wickets} wicket(s)!` : (inn.runs === match.inn1.runs) ? "Match Tied!" : `${match.team1} won by ${match.inn1.runs - inn.runs} run(s)!`;
@@ -1046,7 +1161,7 @@
         else {
             let runScore = 0, wktScore = 0, legalBalls = 0;
             inn.history.forEach((ball) => {
-                runScore += ball.runsAdded; if (ball.type === 'wicket') wktScore += 1;
+                runScore += ball.runsAdded; if (ball.type === 'wicket' || (ball.type === 'retire' && ball.retireType === 'out')) wktScore += 1;
                 let overTag = ball.legalBall ? `${Math.floor(legalBalls / 6)}.${(legalBalls % 6) + 1}` : `${Math.floor(legalBalls / 6)}.${legalBalls % 6}+`;
                 if (ball.legalBall) legalBalls++;
                 let item = document.createElement('div'); item.className = "bbb-item";
@@ -1093,7 +1208,7 @@
         if (recentBalls.length === 0) timeline.innerHTML = `<span>No deliveries.</span>`;
         else {
             recentBalls.forEach((ball) => {
-                let dot = document.createElement('div'); dot.className = "ball-dot " + (ball.type === 'wicket' ? 'wkt' : (ball.display === '4' || ball.display === '6') ? 'boundary' : ball.type === 'extra' ? 'ext' : '');
+                let dot = document.createElement('div'); dot.className = "ball-dot " + (ball.type === 'wicket' ? 'wkt' : (ball.display === '4' || ball.display === '6') ? 'boundary' : ball.type === 'extra' || ball.type === 'retire' ? 'ext' : '');
                 dot.innerText = ball.display; timeline.appendChild(dot);
             });
         }
